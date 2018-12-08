@@ -80,7 +80,7 @@ This is build configuration file with below macros
 
 #### Ignore below macros
 	
-    #define UARTSH_USE_NEWLIB_FGETS     1
+    #define UARTSH_USE_NEWLIB_FGETS     0
     #define UARTSH_CONFIG_STDIN         stdin
     #define UARTSH_CONFIG_STDOUT        stdout
  
@@ -164,6 +164,9 @@ Define a command as function like below
 
     int main()
     {
+    	// if using getchar() then make it to raw mode (no bufferring)
+    	setvbuf(stdin, NULL, _IONBF, 0);
+	
         extern const UartshCommand gcUartshCommands[];
         uartshOpen(gcUartshCommands);
 
