@@ -13,6 +13,10 @@
 
 int main()
 {
+
+  // for making getchar working in rawmode
+  setvbuf(stdin, NULL, _IONBF, 0);
+
 	extern const UartshCommand gcUartshCommands[];
 	uartshOpen(gcUartshCommands);
 	
