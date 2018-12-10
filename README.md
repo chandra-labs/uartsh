@@ -54,7 +54,7 @@ This is build configuration file with below macros
 	  We have to allocate enough buffer space to hold the full command string.
 	  I allocated 128 bytes, this size is including 2 special characters \n and \0, so you get 126 bytes for holding the command string alone.
 
-	#define UARTSH_CONFIG_ARGC_MAX			31
+	#define UARTSH_CONFIG_ARGC_MAX		31
 
 	  Above macro is for mentioning how many space separated words would occur in any command string.
 	  For example, below command has 5 space separated words
@@ -77,12 +77,6 @@ This is build configuration file with below macros
 
       Above macros are for mentioning heap start and end address based on hardware you use and its memory layout.
       If heap memory is reserved using linker script, then you can mention the variable names prefixing with '&' like above, else mention addresses directly.
-
-#### Ignore below macros
-	
-    #define UARTSH_USE_NEWLIB_FGETS     0
-    #define UARTSH_CONFIG_STDIN         stdin
-    #define UARTSH_CONFIG_STDOUT        stdout
  
 #### How to register commands and open uartsh prompt
     
