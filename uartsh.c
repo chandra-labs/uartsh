@@ -18,7 +18,7 @@ size_t uartsh_puts(char* buffer, size_t size)
 	int count = size;
 	while(count--)
 	{
-		UARTSH_CONFIG_uart_putc(*buffer++);
+		putchar(*buffer++);
 	}
 
 	return size;
@@ -33,12 +33,12 @@ size_t uartsh_gets(char buffer[], size_t size)
 	if( size > UARTSH_CONFIG_COMMAND_STRING_SIZE )
 		size = UARTSH_CONFIG_COMMAND_STRING_SIZE;
 
-	// reserve space for \n and \0
-	size -= 2;
+	// reserve space for \0
+	size--;
 
 	while( cCount < size )
 	{
-		c = (char) UARTSH_CONFIG_uart_getc();
+		c = (char) getchar();
 
 		if( (c == '\r')  || (c == '\n') )
 			break;
@@ -46,23 +46,21 @@ size_t uartsh_gets(char buffer[], size_t size)
 		//only alphabets and special characters allowed
 		if( (c > 31) && (c < 127) )
 		{
-			UARTSH_CONFIG_uart_putc(c);
+			putchar(c);
 			buffer[cCount++] = c;
 		}
 		else if( c == '\b' )
 		{
 			if( cCount )
 			{
-				UARTSH_CONFIG_uart_putc('\b');
-				UARTSH_CONFIG_uart_putc(' ');
-				UARTSH_CONFIG_uart_putc('\b');
+				putchar('\b');
+				putchar(' ');
+				putchar('\b');
 				cCount--;
 			}
 		}
 	}
 
-	UARTSH_CONFIG_uart_putc('\n');
-	buffer[cCount++] = '\n';
 	buffer[cCount] = '\0';
 
 	return cCount;
@@ -78,14 +76,10 @@ int uartshOpen( const UartshCommand commands[] )
 	while(1)
 	{
 		printf("\n"UARTSH_CONFIG_PROMPT_STRING" ");
-		fflush(UARTSH_CONFIG_STDOUT);
+		fflush(stdout);
 
-#if UARTSH_USE_NEWLIB_FGETS
-		fgets( buffer, sizeof(buffer), UARTSH_CONFIG_STDIN );
-#else
 		if( 0 == uartsh_gets(buffer, sizeof(buffer)) )
 			continue;
-#endif
 
 		argc = 0;
 		char* token = strtok(buffer, " \n");
@@ -95,10 +89,7 @@ int uartshOpen( const UartshCommand commands[] )
 			token = strtok(NULL, " \n");
 		}
 
-		if( !argc )
-			continue;
-
-		UARTSH_CONFIG_uart_putc('\n');
+		putchar('\n');
 
 		size_t commandLength = strlen(argv[0]);
 		if( 1 == argc )

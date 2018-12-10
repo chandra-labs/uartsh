@@ -41,7 +41,8 @@ int _read(int file, char *ptr, int len) {
     {
 		case STDIN_FILENO: /*stdin*/
 		{
-			return uartsh_gets(ptr, len);
+			*ptr = UARTSH_CONFIG_uart_getc();
+			return 1;
 		}break;
 
 	    default:
@@ -58,7 +59,8 @@ int _write(int file, const char *ptr, int len) {
 		case STDOUT_FILENO: /*stdout*/
 		case STDERR_FILENO: /*stderr*/
 		{
-			return uartsh_puts(ptr, len);
+			UARTSH_CONFIG_uart_putc(*ptr);
+			return 1;
 		}break;
 
 	    default:
@@ -103,7 +105,7 @@ caddr_t _sbrk(int incr) {
 	return (caddr_t) prev_heap_end;
 }
 
-int fsync(int fd) {
+int _fsync(int fd) {
 	if (fd == STDOUT_FILENO || fd == STDERR_FILENO) {
 		return 0;
 	}

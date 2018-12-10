@@ -12,30 +12,17 @@
 /*-----------------------------------------------*/
 
 #define UARTSH_CONFIG_PROMPT_STRING		"$"
-
-#define UARTSH_NEWLIB_PORTED	1
-#if UARTSH_NEWLIB_PORTED
-	// if newlib syscalls are already ported then use below definitions
-	#define UARTSH_CONFIG_uart_getc		getchar
-	#define UARTSH_CONFIG_uart_putc		putchar
-	
-	// must disable fgets usage as we use getchar
-	#define UARTSH_USE_NEWLIB_FGETS			0
-#else
-	// if you use this git provided syscalls.c, for newlib porting
-	// then provide uart's getc and putc functions
-	#define UARTSH_CONFIG_uart_getc		serial_getc
-	#define UARTSH_CONFIG_uart_putc		serial_putc
-
-	// if enabled, for each input lines fgets() will be called, makes execution slower
-	// mostly leave it disabled
-	#define UARTSH_USE_NEWLIB_FGETS			0
-#endif
 /*-----------------------------------------------*/
 
 #define UARTSH_CONFIG_COMMAND_STRING_SIZE	128
 #define UARTSH_CONFIG_ARGC_MAX			31
 /*-----------------------------------------------*/
+
+// for porting newlib using syscalls.c
+
+// provide hardware uart getc and putc functions
+#define UARTSH_CONFIG_uart_getc		serial_getc
+#define UARTSH_CONFIG_uart_putc		serial_putc
 
 // Below heap macros are needed only if git provided syscalls.c is used
 #if 1 // heap defined by linker
@@ -47,10 +34,6 @@
 	#define UARTSH_CONFIG_HEAP_START	0x12000000
 	#define UARTSH_CONFIG_HEAP_END		0x12400000
 #endif
-/*-----------------------------------------------*/
-
-#define UARTSH_CONFIG_STDIN		stdin
-#define UARTSH_CONFIG_STDOUT		stdout
 /*-----------------------------------------------*/
 #endif /* UARTSHCONFIG_H_ */
 	
