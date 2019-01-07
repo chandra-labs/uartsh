@@ -40,8 +40,26 @@ size_t uartsh_gets(char buffer[], size_t size)
 	{
 		c = (char) getchar();
 
-		if( (c == '\r')  || (c == '\n') )
+	#if (UARTSH_CONFIG_END_CHAR & UARTSH_CONFIG_END_CHAR_CR)
+		if( c == '\r' )
+		{
+		#if (UARTSH_CONFIG_END_CHAR == UARTSH_CONFIG_END_CHAR_CRLF)
+			c = (char) getchar();
+			if( c != '\n')
+				continue;
+		#endif
+
+			putchar('\n');
 			break;
+		}
+	#elif (UARTSH_CONFIG_END_CHAR & UARTSH_CONFIG_END_CHAR_LF)
+		if( c == '\n' )
+		{
+			putchar('\n');
+			break;
+		}
+	#endif
+
 
 		//only alphabets and special characters allowed
 		if( (c > 31) && (c < 127) )

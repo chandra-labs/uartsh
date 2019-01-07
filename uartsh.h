@@ -25,8 +25,9 @@
 #define UARTSH_OPTION_GROUP(h)              OPT_GROUP(h)
 /*-----------------------------------------------*/
 
+typedef int (*UartshCommandHandler)(int argc, char* argv[]);
 #define UARTSH_INCLUDE_CMD(handler) extern int handler(int argc, char* argv[])
-#define UARTSH_REGISTER_CMD(name, handler)	{ name, handler }
+#define UARTSH_REGISTER_CMD( _name, _handler)	{ _name, (UartshCommandHandler)_handler }
 typedef struct argparse_option UartshCommandOption;
 /*-----------------------------------------------*/
 
@@ -41,7 +42,7 @@ typedef struct UartshCommandParser
 typedef struct UartshCommand
 {
 	char const* name;
-	int (*handler)(int argc, char* argv[]);
+	UartshCommandHandler handler;
 } UartshCommand;
 /*-----------------------------------------------*/
 

@@ -15,7 +15,7 @@
 /*-----------------------------------------------*/
 
 #define UARTSH_CONFIG_COMMAND_STRING_SIZE	128
-#define UARTSH_CONFIG_ARGC_MAX			31
+#define UARTSH_CONFIG_ARGC_MAX				31
 /*-----------------------------------------------*/
 
 // for porting newlib using syscalls.c
@@ -23,6 +23,11 @@
 // provide hardware uart getc and putc functions
 #define UARTSH_CONFIG_uart_getc		serial_getc
 #define UARTSH_CONFIG_uart_putc		serial_putc
+
+#define UARTSH_CONFIG_END_CHAR_CR	(1 << 0)
+#define UARTSH_CONFIG_END_CHAR_LF	(1 << 1)
+#define UARTSH_CONFIG_END_CHAR_CRLF	(UARTSH_CONFIG_END_CHAR_CR | UARTSH_CONFIG_END_CHAR_LF)
+#define UARTSH_CONFIG_END_CHAR		UARTSH_CONFIG_END_CHAR_CR
 
 // Below heap macros are needed only if git provided syscalls.c is used
 #if 1 // heap defined by linker

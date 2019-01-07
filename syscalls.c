@@ -5,16 +5,13 @@
  * Use of this source code is governed by a MIT-style license that can be found
  * in the LICENSE file.
  *
-**-----------------------------------------------*/
+ **-----------------------------------------------*/
 
 #include <sys/stat.h>
 #include <sys/unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include "./uartshConfig.h"
-
-extern size_t uartsh_gets(char* buffer, size_t size);
-extern size_t uartsh_puts(char* buffer, size_t size);
 
 int _open(const char *name, int flags, int mode) {
 	errno = ENOENT;
@@ -37,35 +34,34 @@ int _isatty(int file) {
 
 int _read(int file, char *ptr, int len) {
 
-    switch (file)
-    {
+	switch (file) {
 		case STDIN_FILENO: /*stdin*/
 		{
-			*ptr = UARTSH_CONFIG_uart_getc();
+			char c = UARTSH_CONFIG_uart_getc();
+			*ptr = c;
 			return 1;
-		}break;
+		} break;
 
-	    default:
-	        errno = EBADF;
-    }
+		default:
+			errno = EBADF;
+	}
 
 	return -1;
 }
 
 int _write(int file, const char *ptr, int len) {
 
-    switch (file)
-    {
+	switch (file) {
 		case STDOUT_FILENO: /*stdout*/
 		case STDERR_FILENO: /*stderr*/
 		{
 			UARTSH_CONFIG_uart_putc(*ptr);
 			return 1;
-		}break;
+		} break;
 
-	    default:
-	        errno = EBADF;
-    }
+		default:
+			errno = EBADF;
+	}
 
 	return -1;
 }
