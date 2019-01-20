@@ -25,8 +25,23 @@ size_t uartsh_puts(char* buffer, size_t size)
 }
 /*-----------------------------------------------*/
 
+#define KEY_BS				0X08
+#define KEY_DEL				0X7F
+#define KEY_ESC_SEQ1		0X1B
+#define KEY_SPECIAL_LEFT	'D'
+#define KEY_SPECIAL_RIGHT	'C'
+#define KEY_ESC_SEQ2		'['
+#define KEY_ESC_SEQ3		'3'
+#define KEY_ESC_SEQ4		'~'
+
+#define FLAG_ESC_SEQ1		1
+#define FLAG_ESC_SEQ2		2
+#define FLAG_ESC_SEQ3		3
+
 size_t uartsh_gets(char buffer[], size_t size)
 {
+	size_t cursor = 0;
+	char specialKey = 0;
 	size_t cCount = 0;
 	char c = 0;
 
@@ -35,6 +50,8 @@ size_t uartsh_gets(char buffer[], size_t size)
 
 	// reserve space for \0
 	size--;
+
+	buffer[cCount] = '\0';
 
 	while( cCount < size )
 	{
@@ -48,38 +65,130 @@ size_t uartsh_gets(char buffer[], size_t size)
 			if( c != '\n')
 				continue;
 		#endif
-
-			putchar('\n');
 			break;
 		}
 	#elif (UARTSH_CONFIG_END_CHAR & UARTSH_CONFIG_END_CHAR_LF)
 		if( c == '\n' )
 		{
-			putchar('\n');
 			break;
 		}
 	#endif
 
-
-		//only alphabets and special characters allowed
-		if( (c > 31) && (c < 127) )
+		switch(specialKey)
 		{
-			putchar(c);
-			buffer[cCount++] = c;
-		}
-		else if( c == '\b' )
-		{
-			if( cCount )
+			case 0:
 			{
-				putchar('\b');
-				putchar(' ');
-				putchar('\b');
-				cCount--;
-			}
+				specialKey = 0;
+
+				switch(c)
+				{
+					case KEY_ESC_SEQ1:
+					{
+						specialKey = FLAG_ESC_SEQ1;
+					} break;
+
+					case KEY_BS:
+					case KEY_DEL:
+					{
+						if( cursor )
+						{
+							cursor--;
+							int b = (cCount - cursor);
+							memcpy(&buffer[cursor],
+										&buffer[cursor + 1],
+										b);
+							buffer[--cCount] = '\0';
+
+							printf("\b%s ", &buffer[cursor]);
+							while(b--)
+								putchar('\b');
+						}
+					} break;
+
+					default:
+					{
+						//only alphabets and special characters allowed
+						if( (c >= 0x20) && (c <= 0x7e) )
+						{
+							if( cursor <= size )
+							{
+								if( cursor == cCount )
+								{
+									buffer[++cCount] = '\0';
+								}
+
+								buffer[cursor++] = c;
+								putchar(c);
+							}
+						}
+					}
+				}
+			} break;
+
+			case FLAG_ESC_SEQ1:
+			{
+				specialKey = 0;
+
+				if( c == KEY_ESC_SEQ2 )
+					specialKey = FLAG_ESC_SEQ2;
+			}break;
+
+			case FLAG_ESC_SEQ2:
+			{
+				specialKey = 0;
+
+				switch(c)
+				{
+					case KEY_SPECIAL_LEFT:
+					{
+						if( cursor )
+						{
+							putchar('\b');
+							cursor--;
+						}
+					} break;
+
+					case KEY_SPECIAL_RIGHT:
+					{
+						if( cursor < cCount )
+						{
+							putchar(buffer[cursor++]);
+						}
+					} break;
+
+					case KEY_ESC_SEQ3:
+					{
+						specialKey = FLAG_ESC_SEQ3;
+					} break;
+				}
+			}break;
+
+			case FLAG_ESC_SEQ3:
+			{
+				specialKey = 0;
+
+				if( c == KEY_ESC_SEQ4 )
+				{
+					if( cursor < cCount )
+					{
+						int b = (cCount - cursor);
+						memcpy(&buffer[cursor],
+									&buffer[cursor + 1],
+									b);
+						buffer[--cCount] = '\0';
+
+						printf(" \b%s \b", &buffer[cursor]);
+						while(--b)
+							putchar('\b');
+					}
+				}
+			}break;
 		}
+
+		fflush(stdout);
 	}
 
-	buffer[cCount] = '\0';
+	putchar('\n');
 
 	return cCount;
 }
@@ -96,8 +205,17 @@ int uartshOpen( const UartshCommand commands[] )
 		printf("\n"UARTSH_CONFIG_PROMPT_STRING" ");
 		fflush(stdout);
 
+#if 0
+		char* pBuffer = buffer;
+		size_t bufferSize = UARTSH_CONFIG_COMMAND_STRING_SIZE;
+		if( 0 == getline(&pBuffer, &bufferSize, stdin) )
+			continue;
+#else
 		if( 0 == uartsh_gets(buffer, sizeof(buffer)) )
 			continue;
+#endif
+
+		printf("%s\n", buffer);
 
 		argc = 0;
 		char* token = strtok(buffer, " \n");
