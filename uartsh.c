@@ -112,21 +112,24 @@ size_t uartsh_gets(char buffer[], size_t size)
 						{
 							if( cCount < size )
 							{
-								int count = ++cCount;
+								int i = ++cCount;
 
-								while(count > cursor)
+								while(i > cursor)
 								{
-									buffer[count] = buffer[count - 1];
-									count--;
+									buffer[i] = buffer[i - 1];
+									i--;
 								}
 
 								buffer[cursor] = c;
 
-								printf("%s", &buffer[cursor]);
+								i = cursor;
+								while( i < cCount )
+									putchar(buffer[i++]);
+
 								cursor++;
 
-								count = cCount - cursor;
-								while(count--)
+								i = cCount - cursor;
+								while(i--)
 									putchar('\b');
 							}
 						}
