@@ -110,15 +110,24 @@ size_t uartsh_gets(char buffer[], size_t size)
 						//only alphabets and special characters allowed
 						if( (c >= 0x20) && (c <= 0x7e) )
 						{
-							if( cursor <= size )
+							if( cCount < size )
 							{
-								if( cursor == cCount )
+								int count = ++cCount;
+
+								while(count > cursor)
 								{
-									buffer[++cCount] = '\0';
+									buffer[count] = buffer[count - 1];
+									count--;
 								}
 
-								buffer[cursor++] = c;
-								putchar(c);
+								buffer[cursor] = c;
+
+								printf("%s", &buffer[cursor]);
+								cursor++;
+
+								count = cCount - cursor;
+								while(count--)
+									putchar('\b');
 							}
 						}
 					}
