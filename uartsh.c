@@ -14,15 +14,6 @@
 #include "./uartsh.h"
 /*-----------------------------------------------*/
 
-static void uartsh_puts(char const* s)
-{
-	while(*s)
-	{
-		putchar(*s++);
-	}
-}
-/*-----------------------------------------------*/
-
 #define HISTORY_COUNT		(UARTSH_CONFIG_COMMAND_HISTORY_COUNT + 1)
 
 #define KEY_BS				0X08
@@ -39,12 +30,48 @@ static void uartsh_puts(char const* s)
 #define FLAG_ESC_SEQ1		1
 #define FLAG_ESC_SEQ2		2
 #define FLAG_ESC_SEQ3		3
+/*-----------------------------------------------*/
 
 struct UartshEditBuffer
 {
 	int cCount;
 	char buffer[UARTSH_CONFIG_COMMAND_STRING_SIZE];
 };
+/*-----------------------------------------------*/
+
+static inline void uartsh_puts(char const* s)
+{
+	char c = 0;
+
+	while( (c = *s++) )
+	{
+		putchar(c);
+	}
+}
+/*-----------------------------------------------*/
+
+static inline void handleDeleteKey(struct UartshEditBuffer* pEditBuffer,
+								unsigned int* pCursor)
+{
+	unsigned int cursor = *pCursor;
+
+	if( cursor < pEditBuffer->cCount )
+	{
+		int b = (pEditBuffer->cCount - cursor);
+		memcpy(&pEditBuffer->buffer[cursor],
+					&pEditBuffer->buffer[cursor + 1],
+					b);
+		pEditBuffer->buffer[--pEditBuffer->cCount] = '\0';
+
+		putchar(' ');
+		putchar('\b');
+		uartsh_puts(&pEditBuffer->buffer[cursor]);
+		putchar(' ');
+		while(b--)
+			putchar('\b');
+	}
+}
+/*-----------------------------------------------*/
 
 static size_t uartsh_gets(char** command)
 {
@@ -93,7 +120,7 @@ static size_t uartsh_gets(char** command)
 		}
 	#endif
 
-		switch(specialKey)
+		switch( specialKey )
 		{
 			case 0:
 			{
@@ -107,7 +134,6 @@ static size_t uartsh_gets(char** command)
 					} break;
 
 					case KEY_BS:
-					case KEY_DEL:
 					{
 						if( cursor )
 						{
@@ -124,6 +150,11 @@ static size_t uartsh_gets(char** command)
 							while(b--)
 								putchar('\b');
 						}
+					} break;
+
+					case KEY_DEL:
+					{
+						handleDeleteKey( pEditBuffer, &cursor );
 					} break;
 
 					default:
@@ -254,21 +285,22 @@ static size_t uartsh_gets(char** command)
 				// deletion
 				if( c == KEY_ESC_SEQ4 )
 				{
-					if( cursor < pEditBuffer->cCount )
-					{
-						int b = (pEditBuffer->cCount - cursor);
-						memcpy(&pEditBuffer->buffer[cursor],
-									&pEditBuffer->buffer[cursor + 1],
-									b);
-						pEditBuffer->buffer[--pEditBuffer->cCount] = '\0';
-
-						putchar(' ');
-						putchar('\b');
-						uartsh_puts(&pEditBuffer->buffer[cursor]);
-						putchar(' ');
-						while(b--)
-							putchar('\b');
-					}
+					handleDeleteKey( pEditBuffer, &cursor );
+//					if( cursor < pEditBuffer->cCount )
+//					{
+//						int b = (pEditBuffer->cCount - cursor);
+//						memcpy(&pEditBuffer->buffer[cursor],
+//									&pEditBuffer->buffer[cursor + 1],
+//									b);
+//						pEditBuffer->buffer[--pEditBuffer->cCount] = '\0';
+//
+//						putchar(' ');
+//						putchar('\b');
+//						uartsh_puts(&pEditBuffer->buffer[cursor]);
+//						putchar(' ');
+//						while(b--)
+//							putchar('\b');
+//					}
 				}
 			}break;
 		}
