@@ -11,13 +11,17 @@
 #include "./uartsh.h"
 /*-----------------------------------------------*/
 
-UARTSH_INCLUDE_CMD(uartshCommand_read);
+#if UARTSH_CONFIG_USE_ARGPARSE
+UARTSH_INCLUDE_CMD(uartshArgparse_read);
+#endif
 /*-----------------------------------------------*/
 
 // ------------- register user commands
 const UartshCommand gcUartshCommands[] = {
 
-		UARTSH_REGISTER_CMD("memread", uartshCommand_read),
+#if UARTSH_CONFIG_USE_ARGPARSE
+		UARTSH_REGISTER_CMD("memread", uartshArgparse_read),
+#endif
 
 		// last must end with null
 		UARTSH_REGISTER_CMD(NULL, NULL),

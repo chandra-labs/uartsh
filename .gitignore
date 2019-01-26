@@ -1,2 +1,6 @@
 *.o
+main
+main.exe
+.cproject
+.project
 

@@ -8,26 +8,28 @@
 **-----------------------------------------------*/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "./uartsh.h"
 /*-----------------------------------------------*/
 
-size_t uartsh_puts(char* buffer, size_t size)
+static void uartsh_puts(char const* s)
 {
-	int count = size;
-	while(count--)
+	while(*s)
 	{
-		putchar(*buffer++);
+		putchar(*s++);
 	}
-
-	return size;
 }
 /*-----------------------------------------------*/
+
+#define HISTORY_COUNT		(UARTSH_CONFIG_COMMAND_HISTORY_COUNT + 1)
 
 #define KEY_BS				0X08
 #define KEY_DEL				0X7F
 #define KEY_ESC_SEQ1		0X1B
+#define KEY_SPECIAL_UP		'A'
+#define KEY_SPECIAL_DOWN	'B'
 #define KEY_SPECIAL_LEFT	'D'
 #define KEY_SPECIAL_RIGHT	'C'
 #define KEY_ESC_SEQ2		'['
@@ -38,24 +40,42 @@ size_t uartsh_puts(char* buffer, size_t size)
 #define FLAG_ESC_SEQ2		2
 #define FLAG_ESC_SEQ3		3
 
-size_t uartsh_gets(char buffer[], size_t size)
+struct UartshEditBuffer
 {
+	int cCount;
+	char buffer[UARTSH_CONFIG_COMMAND_STRING_SIZE];
+};
+
+static size_t uartsh_gets(char** command)
+{
+	static struct UartshEditBuffer editBuffer[HISTORY_COUNT] = { 0, };
+	static int bufferIndex = 0;
+	static int bufferIndexMax = 0;
+
+	struct UartshEditBuffer* pEditBuffer = &editBuffer[bufferIndex];
+
+	if( pEditBuffer->cCount )
+	{
+		if( bufferIndexMax < (HISTORY_COUNT - 1) )
+			bufferIndexMax++;
+
+		bufferIndex++;
+		if( bufferIndex > bufferIndexMax )
+			bufferIndex = 0;
+
+		pEditBuffer = &editBuffer[bufferIndex];
+	}
+
+	pEditBuffer->cCount = 0;
+	pEditBuffer->buffer[0] = '\0';
+
 	size_t cursor = 0;
 	char specialKey = 0;
-	size_t cCount = 0;
-	char c = 0;
 
-	if( size > UARTSH_CONFIG_COMMAND_STRING_SIZE )
-		size = UARTSH_CONFIG_COMMAND_STRING_SIZE;
-
-	// reserve space for \0
-	size--;
-
-	buffer[cCount] = '\0';
-
-	while( cCount < size )
+	// 1 space for \0
+	while( pEditBuffer->cCount < (UARTSH_CONFIG_COMMAND_STRING_SIZE - 1) )
 	{
-		c = (char) getchar();
+		char c = (char) getchar();
 
 	#if (UARTSH_CONFIG_END_CHAR & UARTSH_CONFIG_END_CHAR_CR)
 		if( c == '\r' )
@@ -93,13 +113,15 @@ size_t uartsh_gets(char buffer[], size_t size)
 						if( cursor )
 						{
 							cursor--;
-							int b = (cCount - cursor);
-							memcpy(&buffer[cursor],
-										&buffer[cursor + 1],
+							int b = (pEditBuffer->cCount - cursor);
+							memcpy(&pEditBuffer->buffer[cursor],
+										&pEditBuffer->buffer[cursor + 1],
 										b);
-							buffer[--cCount] = '\0';
+							pEditBuffer->buffer[--pEditBuffer->cCount] = '\0';
 
-							printf("\b%s ", &buffer[cursor]);
+							putchar('\b');
+							uartsh_puts(&pEditBuffer->buffer[cursor]);
+							putchar(' ');
 							while(b--)
 								putchar('\b');
 						}
@@ -110,25 +132,23 @@ size_t uartsh_gets(char buffer[], size_t size)
 						//only alphabets and special characters allowed
 						if( (c >= 0x20) && (c <= 0x7e) )
 						{
-							if( cCount < size )
+//							if( pEditBuffer->cCount < (UARTSH_CONFIG_COMMAND_STRING_SIZE - 1) )
 							{
-								int i = ++cCount;
-
-								while(i > cursor)
+								// insertion
+								int i = pEditBuffer->cCount;
+								while( i > cursor )
 								{
-									buffer[i] = buffer[i - 1];
+									pEditBuffer->buffer[i] = pEditBuffer->buffer[i - 1];
 									i--;
 								}
 
-								buffer[cursor] = c;
-
-								i = cursor;
-								while( i < cCount )
-									putchar(buffer[i++]);
-
+								pEditBuffer->buffer[cursor] = c;
+								pEditBuffer->cCount++;
+								pEditBuffer->buffer[pEditBuffer->cCount] = '\0';
+								uartsh_puts(&pEditBuffer->buffer[cursor]);
 								cursor++;
 
-								i = cCount - cursor;
+								i = (pEditBuffer->cCount - cursor);
 								while(i--)
 									putchar('\b');
 							}
@@ -151,6 +171,59 @@ size_t uartsh_gets(char buffer[], size_t size)
 
 				switch(c)
 				{
+					case KEY_SPECIAL_UP:
+					{
+						while( cursor-- )
+							putchar('\b');
+
+						int oldCount = pEditBuffer->cCount;
+						bufferIndex--;
+						if( bufferIndex < 0 )
+						{
+							bufferIndex = bufferIndexMax;
+						}
+
+						pEditBuffer = &editBuffer[bufferIndex];
+						uartsh_puts(pEditBuffer->buffer);
+						cursor = pEditBuffer->cCount;
+
+						if( oldCount > pEditBuffer->cCount )
+						{
+							int move = (oldCount - pEditBuffer->cCount);
+							while( move-- )
+								putchar(' ');
+							move = (oldCount - pEditBuffer->cCount);
+							while( move-- )
+								putchar('\b');
+						}
+					} break;
+
+					case KEY_SPECIAL_DOWN:
+					{
+						while( cursor-- )
+							putchar('\b');
+
+						int oldCount = pEditBuffer->cCount;
+						bufferIndex++;
+						if( bufferIndex > bufferIndexMax )
+							bufferIndex = 0;
+
+						pEditBuffer = &editBuffer[bufferIndex];
+
+						uartsh_puts(pEditBuffer->buffer);
+						cursor = pEditBuffer->cCount;
+
+						if( oldCount > pEditBuffer->cCount )
+						{
+							int move = (oldCount - pEditBuffer->cCount);
+							while( move-- )
+								putchar(' ');
+							move = (oldCount - pEditBuffer->cCount);
+							while( move-- )
+								putchar('\b');
+						}
+					} break;
+
 					case KEY_SPECIAL_LEFT:
 					{
 						if( cursor )
@@ -162,9 +235,9 @@ size_t uartsh_gets(char buffer[], size_t size)
 
 					case KEY_SPECIAL_RIGHT:
 					{
-						if( cursor < cCount )
+						if( cursor < pEditBuffer->cCount )
 						{
-							putchar(buffer[cursor++]);
+							putchar(pEditBuffer->buffer[cursor++]);
 						}
 					} break;
 
@@ -179,18 +252,22 @@ size_t uartsh_gets(char buffer[], size_t size)
 			{
 				specialKey = 0;
 
+				// deletion
 				if( c == KEY_ESC_SEQ4 )
 				{
-					if( cursor < cCount )
+					if( cursor < pEditBuffer->cCount )
 					{
-						int b = (cCount - cursor);
-						memcpy(&buffer[cursor],
-									&buffer[cursor + 1],
+						int b = (pEditBuffer->cCount - cursor);
+						memcpy(&pEditBuffer->buffer[cursor],
+									&pEditBuffer->buffer[cursor + 1],
 									b);
-						buffer[--cCount] = '\0';
+						pEditBuffer->buffer[--pEditBuffer->cCount] = '\0';
 
-						printf(" \b%s \b", &buffer[cursor]);
-						while(--b)
+						putchar(' ');
+						putchar('\b');
+						uartsh_puts(&pEditBuffer->buffer[cursor]);
+						putchar(' ');
+						while(b--)
 							putchar('\b');
 					}
 				}
@@ -202,38 +279,52 @@ size_t uartsh_gets(char buffer[], size_t size)
 
 	putchar('\n');
 
-	return cCount;
+	// copy current buffer to next buffer only if current buffer has content
+	if( pEditBuffer->cCount )
+	{
+		// as caller uses strtok passed buffer will be spoiled
+		// copies current edit buffer's content to next buffer and passes to caller
+		// next call makes use of passed buffer for editing
+		int bi = (bufferIndex + 1);
+		if( bi > (HISTORY_COUNT  - 1) )
+			bi = 0;
+
+	#if (HISTORY_COUNT >= 2) // as total buffer is 1, no point in copying to itself
+		memcpy(editBuffer[bi].buffer, pEditBuffer->buffer, (pEditBuffer->cCount + 1));
+	#endif
+
+		*command = editBuffer[bi].buffer;
+	}
+
+	return pEditBuffer->cCount;
 }
 /*-----------------------------------------------*/
 
 int uartshOpen( const UartshCommand commands[] )
 {
-	char buffer[UARTSH_CONFIG_COMMAND_STRING_SIZE] = { 0, };
-	char* argv[UARTSH_CONFIG_ARGC_MAX + 1] = { 0, };
+	char* argv[UARTSH_CONFIG_ARGC_MAX] = { 0, };
 	int argc = 0;
 
 	while(1)
 	{
-		printf("\n"UARTSH_CONFIG_PROMPT_STRING" ");
+		uartsh_puts("\n"UARTSH_CONFIG_PROMPT_STRING" ");
 		fflush(stdout);
 
-#if 0
-		char* pBuffer = buffer;
-		size_t bufferSize = UARTSH_CONFIG_COMMAND_STRING_SIZE;
-		if( 0 == getline(&pBuffer, &bufferSize, stdin) )
+		char* commandString = NULL;
+		int commandStringLength = 0;
+		if( 0 == (commandStringLength = uartsh_gets(&commandString)) )
 			continue;
-#else
-		if( 0 == uartsh_gets(buffer, sizeof(buffer)) )
-			continue;
-#endif
 
-		printf("%s\n", buffer);
+		uartsh_puts(commandString);
 
 		argc = 0;
-		char* token = strtok(buffer, " \n");
+		char* token = strtok(commandString, " \n");
 		while(token != NULL)
 		{
 			argv[argc++] = token;
+			if( argc >= UARTSH_CONFIG_ARGC_MAX )
+				break;
+
 			token = strtok(NULL, " \n");
 		}
 
@@ -242,19 +333,24 @@ int uartshOpen( const UartshCommand commands[] )
 		size_t commandLength = strlen(argv[0]);
 		if( 1 == argc )
 		{
-			if( (commandLength == 2) && (0 == strncmp("ls", argv[0], 2)) )
+			if( commandLength == 4 )
 			{
-				puts("Supported commands are below:\n");
-				int index = 0;
-				while( commands[index].name != NULL )
+				if( 0 == strncmp("help", argv[0], 4) )
 				{
-					printf("  %s\n", commands[index++].name);
-				}
+					puts("Supported commands are below:\n");
+					int index = 0;
+					while( commands[index].name != NULL )
+					{
+						uartsh_puts("  ");
+						uartsh_puts(commands[index++].name);
+						putchar('\n');
+					}
 
-				continue;
+					continue;
+				}
+				else if( 0 == strncmp("exit", argv[0], 4) )
+					return 0;
 			}
-			else if( (commandLength == 4) && (0 == strncmp("exit", argv[0], 4)) )
-				return 0;
 		}
 
 		const UartshCommand* pUserApp = NULL;
@@ -279,12 +375,14 @@ int uartshOpen( const UartshCommand commands[] )
 		if( NULL != pUserApp )
 			pUserApp->handler(argc, argv);
 		else
-			puts("unknown command");
+			uartsh_puts("unknown command\n");
 	}
 
 	return 0;
 }
 /*-----------------------------------------------*/
+
+#if UARTSH_CONFIG_USE_ARGPARSE
 
 int uartshParseCommand(UartshCommandParser* parser, int argc, char* argv[])
 {
@@ -293,4 +391,6 @@ int uartshParseCommand(UartshCommandParser* parser, int argc, char* argv[])
     argparse_describe(&argparse, parser->description, NULL);
 	return argparse_parse(&argparse, argc, argv);
 }
+#endif
 /*-----------------------------------------------*/
+

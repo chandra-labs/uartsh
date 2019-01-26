@@ -11,12 +11,15 @@
 #include "./uartsh.h"
 /*-----------------------------------------------*/
 
-int uartshCommand_read(int argc, char* argv[])
+#if UARTSH_CONFIG_USE_ARGPARSE
+
+int uartshArgparse_read(int argc, char* argv[])
 {
-		static const char* usages[] =
+		static char const* usages[] =
 		{
-			"memread -a #address -c #count",
-			"memread --address #address --count #count",
+			"memread -a <address> -c <count>",
+			"memread -a 0x10000000 -c 64",
+			"memread --address <address> --count <count>",
 			NULL,
 		};
 
@@ -32,10 +35,12 @@ int uartshCommand_read(int argc, char* argv[])
 			UARTSH_OPTION_END(),
 		};
 
-		UartshCommandParser parser = { 0, };
-		parser.options = options;
-		parser.usages = usages;
-		parser.description = "Memory read / write operations";
+		UartshCommandParser parser = {
+				.usages = usages,
+				.description = "Memory read / write operations",
+				.options = options,
+		};
+
 		argc = uartshParseCommand(&parser, argc, argv);
 
 		if( argc >= 0 )
@@ -53,5 +58,6 @@ int uartshCommand_read(int argc, char* argv[])
 
 		return 0; // return values are not handled and of no use
 }
+#endif
 /*-----------------------------------------------*/
 

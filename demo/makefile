@@ -11,7 +11,9 @@ EXE = main
 
 all : $(EXE)
 
-SRC = main.c argparse.c uartsh.c uartshCommands.c uartshCommandsRegistry.c
+SRC = ../argparse.c ../uartsh.c ../uartshCommands.c ../uartshCommandsRegistry.c
+SRC += main.c rawConsole.c
+
 LIBS =
 LIBS := $(addprefix -l, $(LIBS))
 

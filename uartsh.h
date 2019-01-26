@@ -11,8 +11,27 @@
 #define UARTSH_H
 /*-----------------------------------------------*/
 
-#include "./argparse.h"
 #include "./uartshConfig.h"
+/*-----------------------------------------------*/
+
+typedef int (*UartshCommandHandler)(int argc, char* argv[]);
+
+#define UARTSH_INCLUDE_CMD(handler) extern int handler(int argc, char* argv[])
+#define UARTSH_REGISTER_CMD( _name, _handler)	{ _name, (UartshCommandHandler)_handler }
+
+typedef struct UartshCommand
+{
+	char const* name;
+	UartshCommandHandler handler;
+} UartshCommand;
+/*-----------------------------------------------*/
+
+int uartshOpen(const UartshCommand commands[]);
+/*-----------------------------------------------*/
+
+#if UARTSH_CONFIG_USE_ARGPARSE
+
+#include "./argparse.h"
 /*-----------------------------------------------*/
 
 #define UARTSH_OPTION_BEGIN()				OPT_HELP()
@@ -25,11 +44,7 @@
 #define UARTSH_OPTION_GROUP(h)              OPT_GROUP(h)
 /*-----------------------------------------------*/
 
-typedef int (*UartshCommandHandler)(int argc, char* argv[]);
-#define UARTSH_INCLUDE_CMD(handler) extern int handler(int argc, char* argv[])
-#define UARTSH_REGISTER_CMD( _name, _handler)	{ _name, (UartshCommandHandler)_handler }
 typedef struct argparse_option UartshCommandOption;
-/*-----------------------------------------------*/
 
 typedef struct UartshCommandParser
 {
@@ -39,16 +54,8 @@ typedef struct UartshCommandParser
 } UartshCommandParser;
 /*-----------------------------------------------*/
 
-typedef struct UartshCommand
-{
-	char const* name;
-	UartshCommandHandler handler;
-} UartshCommand;
-/*-----------------------------------------------*/
-
-size_t uartsh_gets(char* buffer, size_t size);
-size_t uartsh_puts(char* buffer, size_t size);
-int uartshOpen(const UartshCommand commands[]);
 int uartshParseCommand(UartshCommandParser* parser, int argc, char* argv[]);
+
+#endif // UARTSH_CONFIG_USE_ARGPARSE
 /*-----------------------------------------------*/
 #endif /* UARTSH_H */
