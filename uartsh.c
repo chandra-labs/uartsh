@@ -48,7 +48,7 @@ struct UartshEditBuffer
 
 static size_t uartsh_gets(char** command)
 {
-	static struct UartshEditBuffer editBuffer[HISTORY_COUNT] = { 0, };
+	static struct UartshEditBuffer editBuffer[HISTORY_COUNT] = { { 0, }, };
 	static int bufferIndex = 0;
 	static int bufferIndexMax = 0;
 
@@ -72,8 +72,7 @@ static size_t uartsh_gets(char** command)
 	size_t cursor = 0;
 	char specialKey = 0;
 
-	// 1 space for \0
-	while( pEditBuffer->cCount < (UARTSH_CONFIG_COMMAND_STRING_SIZE - 1) )
+	while( 1 )
 	{
 		char c = (char) getchar();
 
@@ -132,7 +131,7 @@ static size_t uartsh_gets(char** command)
 						//only alphabets and special characters allowed
 						if( (c >= 0x20) && (c <= 0x7e) )
 						{
-//							if( pEditBuffer->cCount < (UARTSH_CONFIG_COMMAND_STRING_SIZE - 1) )
+							if( pEditBuffer->cCount < (UARTSH_CONFIG_COMMAND_STRING_SIZE - 1) )
 							{
 								// insertion
 								int i = pEditBuffer->cCount;
