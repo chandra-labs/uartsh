@@ -8,20 +8,18 @@
 **-----------------------------------------------*/
 
 #include <stdio.h>
-#include "./uartsh.h"
+#include "../uartsh.h"
 /*-----------------------------------------------*/
 
-#if UARTSH_CONFIG_USE_ARGPARSE
-UARTSH_INCLUDE_CMD(uartshArgparse_read);
-#endif
+UARTSH_INCLUDE_CMD(uartshCommand_mr);
+UARTSH_INCLUDE_CMD(uartshCommand_mw);
 /*-----------------------------------------------*/
 
 // ------------- register user commands
 const UartshCommand gcUartshCommands[] = {
 
-#if UARTSH_CONFIG_USE_ARGPARSE
-		UARTSH_REGISTER_CMD("memread", uartshArgparse_read),
-#endif
+		UARTSH_REGISTER_CMD("mr", uartshCommand_mr),
+		UARTSH_REGISTER_CMD("mw", uartshCommand_mw),
 
 		// last must end with null
 		UARTSH_REGISTER_CMD(NULL, NULL),

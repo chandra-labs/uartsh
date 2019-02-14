@@ -12,18 +12,27 @@
 /*-----------------------------------------------*/
 
 #define UARTSH_CONFIG_PROMPT_STRING				"uartsh#"
-#define UARTSH_CONFIG_COMMAND_STRING_SIZE		128
+#define UARTSH_CONFIG_COMMAND_STRING_SIZE		99
 #define UARTSH_CONFIG_ARGC_MAX					31
-#define UARTSH_CONFIG_COMMAND_HISTORY_COUNT		5
-
-#define UARTSH_CONFIG_END_CHAR_CR		(1 << 0)
-#define UARTSH_CONFIG_END_CHAR_LF		(1 << 1)
-#define UARTSH_CONFIG_END_CHAR_CRLF		(UARTSH_CONFIG_END_CHAR_CR | UARTSH_CONFIG_END_CHAR_LF)
-
-#define UARTSH_CONFIG_END_CHAR			UARTSH_CONFIG_END_CHAR_CR
+#define UARTSH_CONFIG_COMMAND_HISTORY_COUNT		20
 /*-----------------------------------------------*/
 
-#define UARTSH_CONFIG_USE_ARGPARSE		1
+// CONFIG LINE TERMINATION
+#define UARTSH_END_CHAR_CR			(1 << 0)
+#define UARTSH_END_CHAR_LF			(1 << 1)
+#define UARTSH_END_CHAR_CRLF		(UARTSH_END_CHAR_CR | UARTSH_END_CHAR_LF)
+
+#define UARTSH_CONFIG_END_CHAR		UARTSH_END_CHAR_CR
+/*-----------------------------------------------*/
+
+// CONFIG BACKSPACE AND DELETE KEY
+#define UARTSH_BACKSPACE_KEY	0X08
+#define UARTSH_DELETE_KEY		0X7F
+
+#define UARTSH_CONFIG_KEY_BACKSPACE	UARTSH_DELETE_KEY///UARTSH_BACKSPACE_KEY
+/*-----------------------------------------------*/
+
+#define UARTSH_CONFIG_USE_ARGPARSE	1
 /*-----------------------------------------------*/
 
 // for porting newlibc using syscalls.c

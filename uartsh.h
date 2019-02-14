@@ -11,9 +11,6 @@
 #define UARTSH_H
 /*-----------------------------------------------*/
 
-#include "./uartshConfig.h"
-/*-----------------------------------------------*/
-
 typedef int (*UartshCommandHandler)(int argc, char* argv[]);
 
 #define UARTSH_INCLUDE_CMD(handler) extern int handler(int argc, char* argv[])
@@ -26,10 +23,12 @@ typedef struct UartshCommand
 } UartshCommand;
 /*-----------------------------------------------*/
 
-int uartshOpen(const UartshCommand commands[]);
+unsigned int uartsh_gets(char** input);
+void uartsh_puts(char const* s);
+int uartshTokenize(char* commandString, int argcMax, char* argv[]);
+UartshCommandHandler uartshGetHandler(UartshCommand const cmdlist[], char const* command);
+int uartshOpen(const UartshCommand cmdlist[]);
 /*-----------------------------------------------*/
-
-#if UARTSH_CONFIG_USE_ARGPARSE
 
 #include "./argparse.h"
 /*-----------------------------------------------*/
@@ -55,7 +54,5 @@ typedef struct UartshCommandParser
 /*-----------------------------------------------*/
 
 int uartshParseCommand(UartshCommandParser* parser, int argc, char* argv[]);
-
-#endif // UARTSH_CONFIG_USE_ARGPARSE
 /*-----------------------------------------------*/
 #endif /* UARTSH_H */

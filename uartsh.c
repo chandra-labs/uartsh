@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "./uartshConfig.h"
 #include "./uartsh.h"
 /*-----------------------------------------------*/
 
@@ -39,7 +40,7 @@ struct UartshEditBuffer
 };
 /*-----------------------------------------------*/
 
-static inline void uartsh_puts(char const* s)
+inline void uartsh_puts(char const* s)
 {
 	char c = 0;
 
@@ -51,7 +52,7 @@ static inline void uartsh_puts(char const* s)
 /*-----------------------------------------------*/
 
 static inline void handleDeleteKey(struct UartshEditBuffer* pEditBuffer,
-								unsigned int* pCursor)
+								size_t* pCursor)
 {
 	unsigned int cursor = *pCursor;
 
@@ -73,15 +74,13 @@ static inline void handleDeleteKey(struct UartshEditBuffer* pEditBuffer,
 }
 /*-----------------------------------------------*/
 
-static size_t uartsh_gets(char** command)
+unsigned int uartsh_gets(char** input)
 {
 	static struct UartshEditBuffer editBuffer[HISTORY_COUNT] = { { 0, }, };
 	static int bufferIndex = 0;
 	static int bufferIndexMax = 0;
 
-	struct UartshEditBuffer* pEditBuffer = &editBuffer[bufferIndex];
-
-	if( pEditBuffer->cCount )
+	if( editBuffer[bufferIndex].cCount )
 	{
 		if( bufferIndexMax < (HISTORY_COUNT - 1) )
 			bufferIndexMax++;
@@ -89,13 +88,13 @@ static size_t uartsh_gets(char** command)
 		bufferIndex++;
 		if( bufferIndex > bufferIndexMax )
 			bufferIndex = 0;
-
-		pEditBuffer = &editBuffer[bufferIndex];
 	}
 
+	struct UartshEditBuffer* pEditBuffer = &editBuffer[bufferIndex];
 	pEditBuffer->cCount = 0;
 	pEditBuffer->buffer[0] = '\0';
 
+	int hi = bufferIndex;
 	size_t cursor = 0;
 	char specialKey = 0;
 
@@ -103,17 +102,17 @@ static size_t uartsh_gets(char** command)
 	{
 		char c = (char) getchar();
 
-	#if (UARTSH_CONFIG_END_CHAR & UARTSH_CONFIG_END_CHAR_CR)
+	#if (UARTSH_CONFIG_END_CHAR & UARTSH_END_CHAR_CR)
 		if( c == '\r' )
 		{
-		#if (UARTSH_CONFIG_END_CHAR == UARTSH_CONFIG_END_CHAR_CRLF)
+		#if (UARTSH_CONFIG_END_CHAR == UARTSH_END_CHAR_CRLF)
 			c = (char) getchar();
 			if( c != '\n')
 				continue;
 		#endif
 			break;
 		}
-	#elif (UARTSH_CONFIG_END_CHAR & UARTSH_CONFIG_END_CHAR_LF)
+	#elif (UARTSH_CONFIG_END_CHAR & UARTSH_END_CHAR_LF)
 		if( c == '\n' )
 		{
 			break;
@@ -133,7 +132,7 @@ static size_t uartsh_gets(char** command)
 						specialKey = FLAG_ESC_SEQ1;
 					} break;
 
-					case KEY_BS:
+					case UARTSH_CONFIG_KEY_BACKSPACE:
 					{
 						if( cursor )
 						{
@@ -152,10 +151,12 @@ static size_t uartsh_gets(char** command)
 						}
 					} break;
 
+			#if (UARTSH_CONFIG_KEY_BACKSPACE != UARTSH_DELETE_KEY)
 					case KEY_DEL:
 					{
 						handleDeleteKey( pEditBuffer, &cursor );
 					} break;
+			#endif
 
 					default:
 					{
@@ -207,13 +208,23 @@ static size_t uartsh_gets(char** command)
 							putchar('\b');
 
 						int oldCount = pEditBuffer->cCount;
-						bufferIndex--;
-						if( bufferIndex < 0 )
+						hi--;
+						if( hi < 0 )
 						{
-							bufferIndex = bufferIndexMax;
+							hi = bufferIndexMax;
 						}
 
-						pEditBuffer = &editBuffer[bufferIndex];
+						if( hi == bufferIndex )
+						{
+							pEditBuffer->cCount = 0;
+							pEditBuffer->buffer[0] = '\0';
+						}
+						else
+						{
+							pEditBuffer->cCount = editBuffer[hi].cCount;
+							memcpy(pEditBuffer->buffer, editBuffer[hi].buffer, (pEditBuffer->cCount + 1));
+						}
+
 						uartsh_puts(pEditBuffer->buffer);
 						cursor = pEditBuffer->cCount;
 
@@ -234,11 +245,20 @@ static size_t uartsh_gets(char** command)
 							putchar('\b');
 
 						int oldCount = pEditBuffer->cCount;
-						bufferIndex++;
-						if( bufferIndex > bufferIndexMax )
-							bufferIndex = 0;
+						hi++;
+						if( hi > bufferIndexMax )
+							hi = 0;
 
-						pEditBuffer = &editBuffer[bufferIndex];
+						if( hi == bufferIndex )
+						{
+							pEditBuffer->cCount = 0;
+							pEditBuffer->buffer[0] = '\0';
+						}
+						else
+						{
+							pEditBuffer->cCount = editBuffer[hi].cCount;
+							memcpy(pEditBuffer->buffer, editBuffer[hi].buffer, (pEditBuffer->cCount + 1));
+						}
 
 						uartsh_puts(pEditBuffer->buffer);
 						cursor = pEditBuffer->cCount;
@@ -286,21 +306,6 @@ static size_t uartsh_gets(char** command)
 				if( c == KEY_ESC_SEQ4 )
 				{
 					handleDeleteKey( pEditBuffer, &cursor );
-//					if( cursor < pEditBuffer->cCount )
-//					{
-//						int b = (pEditBuffer->cCount - cursor);
-//						memcpy(&pEditBuffer->buffer[cursor],
-//									&pEditBuffer->buffer[cursor + 1],
-//									b);
-//						pEditBuffer->buffer[--pEditBuffer->cCount] = '\0';
-//
-//						putchar(' ');
-//						putchar('\b');
-//						uartsh_puts(&pEditBuffer->buffer[cursor]);
-//						putchar(' ');
-//						while(b--)
-//							putchar('\b');
-//					}
 				}
 			}break;
 		}
@@ -324,14 +329,56 @@ static size_t uartsh_gets(char** command)
 		memcpy(editBuffer[bi].buffer, pEditBuffer->buffer, (pEditBuffer->cCount + 1));
 	#endif
 
-		*command = editBuffer[bi].buffer;
+		*input = editBuffer[bi].buffer;
 	}
 
 	return pEditBuffer->cCount;
 }
 /*-----------------------------------------------*/
 
-int uartshOpen( const UartshCommand commands[] )
+int uartshTokenize(char* commandString, int argcMax, char* argv[])
+{
+	int argc = 0;
+	char* token = strtok(commandString, " \n");
+	while(token != NULL)
+	{
+		argv[argc++] = token;
+		if( argc >= argcMax )
+			break;
+
+		token = strtok(NULL, " \n");
+	}
+
+	return argc;
+}
+/*-----------------------------------------------*/
+
+UartshCommandHandler uartshGetHandler(UartshCommand const cmdlist[], char const* command)
+{
+	int commandLength = strlen(command);
+
+	int index = 0;
+	while( cmdlist[index].name != NULL )
+	{
+		int appNameSize = strlen(cmdlist[index].name);
+
+		// extra check to ensure command length is exactly matching app length
+		if( commandLength == appNameSize )
+		{
+			if( 0 == strncmp(command, cmdlist[index].name, appNameSize) )
+			{
+				return cmdlist[index].handler;
+			}
+		}
+
+		index++;
+	}
+
+	return NULL;
+}
+/*-----------------------------------------------*/
+
+int uartshOpen( const UartshCommand cmdlist[] )
 {
 	char* argv[UARTSH_CONFIG_ARGC_MAX] = { 0, };
 	int argc = 0;
@@ -347,18 +394,7 @@ int uartshOpen( const UartshCommand commands[] )
 			continue;
 
 		uartsh_puts(commandString);
-
-		argc = 0;
-		char* token = strtok(commandString, " \n");
-		while(token != NULL)
-		{
-			argv[argc++] = token;
-			if( argc >= UARTSH_CONFIG_ARGC_MAX )
-				break;
-
-			token = strtok(NULL, " \n");
-		}
-
+		argc = uartshTokenize(commandString, UARTSH_CONFIG_ARGC_MAX, argv);
 		putchar('\n');
 
 		size_t commandLength = strlen(argv[0]);
@@ -368,12 +404,18 @@ int uartshOpen( const UartshCommand commands[] )
 			{
 				if( 0 == strncmp("help", argv[0], 4) )
 				{
-					puts("Supported commands are below:\n");
+					if( NULL == cmdlist )
+					{
+						uartsh_puts("No commands found\n");
+						continue;
+					}
+
+					uartsh_puts("Supported commands are below:\n\n");
 					int index = 0;
-					while( commands[index].name != NULL )
+					while( cmdlist[index].name != NULL )
 					{
 						uartsh_puts("  ");
-						uartsh_puts(commands[index++].name);
+						uartsh_puts(cmdlist[index++].name);
 						putchar('\n');
 					}
 
@@ -384,29 +426,17 @@ int uartshOpen( const UartshCommand commands[] )
 			}
 		}
 
-		const UartshCommand* pUserApp = NULL;
-		int index = 0;
-		while( commands[index].name != NULL )
-		{
-			size_t appNameSize = strlen(commands[index].name);
+		if( NULL == cmdlist )
+			continue;
 
-			// extra check to ensure command length is exactly matching app length
-			if( commandLength == appNameSize )
-			{
-				if( 0 == strncmp(argv[0], commands[index].name, appNameSize) )
-				{
-					pUserApp = &commands[index];
-					break;
-				}
-			}
-
-			index++;
-		}
-
-		if( NULL != pUserApp )
-			pUserApp->handler(argc, argv);
-		else
+		UartshCommandHandler handler = uartshGetHandler(cmdlist, argv[0]);
+		if( NULL == handler )
 			uartsh_puts("unknown command\n");
+		else
+		{
+			if( handler(argc, argv) < 0 )
+				uartsh_puts("exited with error\n");
+		}
 	}
 
 	return 0;

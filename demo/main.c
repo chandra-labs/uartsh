@@ -19,10 +19,17 @@
 
 int main()
 {
+	char* buffer = malloc((1024 * 4) + 7);
+	buffer = (char*) ( ((size_t)buffer) & ~((size_t)7) );
+
+	printf("%d bytes of buffer %p for r/w operations\n", (1024 * 4), buffer);
+
 	extern void uartshEnableRawMode();
 	uartshEnableRawMode();
 	extern const UartshCommand gcUartshCommands[];
 	uartshOpen(gcUartshCommands);
+
+	free(buffer);
 
 	return 0;
 }
