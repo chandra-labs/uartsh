@@ -11,10 +11,9 @@
 #define UARTSHCONFIG_H_
 /*-----------------------------------------------*/
 
-#define UARTSH_CONFIG_PROMPT_STRING				"uartsh#"
 #define UARTSH_CONFIG_COMMAND_STRING_SIZE		99
 #define UARTSH_CONFIG_ARGC_MAX					31
-#define UARTSH_CONFIG_COMMAND_HISTORY_COUNT		20
+#define UARTSH_CONFIG_COMMAND_HISTORY_COUNT		3
 /*-----------------------------------------------*/
 
 // CONFIG LINE TERMINATION

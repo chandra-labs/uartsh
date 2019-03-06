@@ -27,7 +27,7 @@ int main()
 	extern void uartshEnableRawMode();
 	uartshEnableRawMode();
 	extern const UartshCommand gcUartshCommands[];
-	uartshOpen(gcUartshCommands);
+	uartshOpen("uartsh# ", gcUartshCommands);
 
 	free(buffer);
 

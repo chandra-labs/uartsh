@@ -208,11 +208,10 @@ unsigned int uartsh_gets(char** input)
 							putchar('\b');
 
 						int oldCount = pEditBuffer->cCount;
+
 						hi--;
 						if( hi < 0 )
-						{
 							hi = bufferIndexMax;
-						}
 
 						if( hi == bufferIndex )
 						{
@@ -245,6 +244,7 @@ unsigned int uartsh_gets(char** input)
 							putchar('\b');
 
 						int oldCount = pEditBuffer->cCount;
+
 						hi++;
 						if( hi > bufferIndexMax )
 							hi = 0;
@@ -336,24 +336,24 @@ unsigned int uartsh_gets(char** input)
 }
 /*-----------------------------------------------*/
 
-int uartshTokenize(char* commandString, int argcMax, char* argv[])
+int uartshTokenize(char commandString[], char const tokens[], int argcMax, char* argv[])
 {
 	int argc = 0;
-	char* token = strtok(commandString, " \n");
+	char* token = strtok(commandString, tokens);
 	while(token != NULL)
 	{
 		argv[argc++] = token;
 		if( argc >= argcMax )
 			break;
 
-		token = strtok(NULL, " \n");
+		token = strtok(NULL, tokens);
 	}
 
 	return argc;
 }
 /*-----------------------------------------------*/
 
-UartshCommandHandler uartshGetHandler(UartshCommand const cmdlist[], char const* command)
+UartshCommandHandler uartshGetHandler(UartshCommand const cmdlist[], char command[])
 {
 	int commandLength = strlen(command);
 
@@ -378,14 +378,15 @@ UartshCommandHandler uartshGetHandler(UartshCommand const cmdlist[], char const*
 }
 /*-----------------------------------------------*/
 
-int uartshOpen( const UartshCommand cmdlist[] )
+int uartshOpen( char* const prompt, const UartshCommand cmdlist[] )
 {
 	char* argv[UARTSH_CONFIG_ARGC_MAX] = { 0, };
 	int argc = 0;
 
 	while(1)
 	{
-		uartsh_puts("\n"UARTSH_CONFIG_PROMPT_STRING" ");
+		putchar('\n');
+		uartsh_puts(prompt);
 		fflush(stdout);
 
 		char* commandString = NULL;
@@ -394,7 +395,7 @@ int uartshOpen( const UartshCommand cmdlist[] )
 			continue;
 
 		uartsh_puts(commandString);
-		argc = uartshTokenize(commandString, UARTSH_CONFIG_ARGC_MAX, argv);
+		argc = uartshTokenize(commandString, " \n", UARTSH_CONFIG_ARGC_MAX, argv);
 		putchar('\n');
 
 		size_t commandLength = strlen(argv[0]);

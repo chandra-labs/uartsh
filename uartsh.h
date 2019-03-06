@@ -25,9 +25,9 @@ typedef struct UartshCommand
 
 unsigned int uartsh_gets(char** input);
 void uartsh_puts(char const* s);
-int uartshTokenize(char* commandString, int argcMax, char* argv[]);
-UartshCommandHandler uartshGetHandler(UartshCommand const cmdlist[], char const* command);
-int uartshOpen(const UartshCommand cmdlist[]);
+int uartshTokenize(char commandString[], char const tokens[], int argcMax, char* argv[]);
+UartshCommandHandler uartshGetHandler(UartshCommand const cmdlist[], char command[]);
+int uartshOpen(char* const prompt, const UartshCommand cmdlist[]);
 /*-----------------------------------------------*/
 
 #include "./argparse.h"

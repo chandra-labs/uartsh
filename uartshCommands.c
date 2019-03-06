@@ -15,13 +15,13 @@ int uartshCommand_mr(int argc, char* argv[])
 {
 	char const* const usage[] =
 	{
-			"mr -u32 <address> <count>",
+			"mr -u32 <address> <bytes>",
 			NULL,
 	};
 
 	int width = 8;
 	char* address = NULL;
-	int count = 1;
+	int bytes = 1;
 
 	UartshCommandOption const options[] =
 	{
@@ -43,7 +43,7 @@ int uartshCommand_mr(int argc, char* argv[])
 	{
 		if( argc > 0 )
 		{
-			address = (char*) strtoull(argv[0], NULL, 16);
+			address = (char*) strtoull(argv[0], NULL, 0);
 			if( NULL == address )
 			{
 				puts("address field missing");
@@ -52,11 +52,9 @@ int uartshCommand_mr(int argc, char* argv[])
 		}
 
 		if( argc > 1 )
-			count = (int) strtoul(argv[1], NULL, 0);
+			bytes = (int) strtoul(argv[1], NULL, 0);
 
 		width >>= 3;
-
-		int bytes = (count * width);
 
 		for( int i = 0; i < bytes; i += width )
 		{
@@ -67,7 +65,7 @@ int uartshCommand_mr(int argc, char* argv[])
 			{
 				case 1:
 				{
-					printf(" %02x", address[i]);
+					printf(" %02x", (unsigned char)(address[i] & 0xff));
 				} break;
 
 				case 2:
@@ -98,7 +96,7 @@ int uartshCommand_mw(int argc, char* argv[])
 {
 	char const* const usage[] =
 	{
-			"mw -u32 <address> <data> <count>",
+			"mw -u32 <address> <data> <bytes>",
 			NULL,
 	};
 
@@ -106,7 +104,7 @@ int uartshCommand_mw(int argc, char* argv[])
 	int width = 8;
 	char* address = NULL;
 	unsigned long long data = 0;
-	int count = 1;
+	int bytes = 1;
 
 	UartshCommandOption const options[] =
 	{
@@ -138,14 +136,12 @@ int uartshCommand_mw(int argc, char* argv[])
 		}
 
 		if( argc > 1 )
-			data = (unsigned long long) strtoull(argv[1], NULL, 16);
+			data = (unsigned long long) strtoull(argv[1], NULL, 0);
 
 		if( argc > 2 )
-			count = (int) strtoul(argv[2], NULL, 0);
+			bytes = (int) strtoul(argv[2], NULL, 0);
 
 		width >>= 3;
-
-		int bytes = (count * width);
 
 		for( int i = 0; i < bytes; i += width )
 		{
