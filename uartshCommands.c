@@ -15,19 +15,24 @@ int uartshCommand_mr(int argc, char* argv[])
 {
 	char const* const usage[] =
 	{
-			"mr -u32 <address> <bytes>",
+			"mr -u32 <address> <count>",
+			"mr -u32 <address> --bytes 100",
 			NULL,
 	};
 
+	int flags = 0;
 	int width = 8;
 	char* address = NULL;
-	int bytes = 1;
+	int count = 1;
+
+#define MR_BYTES	(1 << 0)
 
 	UartshCommandOption const options[] =
 	{
 			UARTSH_OPTION_BEGIN(),
 			UARTSH_OPTION_GROUP("memory read options"),
 			UARTSH_OPTION_INTEGER('u', NULL, &width, "data width [8|16|32|64]"),
+			UARTSH_OPTION_BIT('b', "bytes", &flags, "n bytes to read", NULL, MR_BYTES),
 			UARTSH_OPTION_END(),
 	};
 
@@ -43,7 +48,7 @@ int uartshCommand_mr(int argc, char* argv[])
 	{
 		if( argc > 0 )
 		{
-			address = (char*) strtoull(argv[0], NULL, 0);
+			address = (char*) strtoull(argv[0], NULL, 16);
 			if( NULL == address )
 			{
 				puts("address field missing");
@@ -52,14 +57,30 @@ int uartshCommand_mr(int argc, char* argv[])
 		}
 
 		if( argc > 1 )
-			bytes = (int) strtoul(argv[1], NULL, 0);
+			count = (int) strtoul(argv[1], NULL, 0);
 
 		width >>= 3;
+		unsigned long bytes = count;
+
+		if( 0 == (flags & MR_BYTES) )
+			bytes = (count * width);
+
+		unsigned long balance = bytes;
 
 		for( int i = 0; i < bytes; i += width )
 		{
 			if( 0 == (i & 0xf) )
 				printf("\n%p:", (address + i));
+
+			if( balance < width )
+			{
+				if( balance < 2 )
+					width = 1;
+				else if( balance < 4 )
+					width = 2;
+				else if( balance < 8 )
+					width = 4;
+			}
 
 			switch( width )
 			{
@@ -83,9 +104,11 @@ int uartshCommand_mr(int argc, char* argv[])
 					printf(" %016llx", *(unsigned long long*)&address[i]);
 				} break;
 			}
+
+			balance -= width;
 		}
 
-		printf("\n%d bytes read\n", bytes);
+		printf("\n%ld bytes read\n", bytes);
 	}
 
 	return 0;
@@ -96,7 +119,7 @@ int uartshCommand_mw(int argc, char* argv[])
 {
 	char const* const usage[] =
 	{
-			"mw -u32 <address> <data> <bytes>",
+			"mw -u32 <address> <data> <count>",
 			NULL,
 	};
 
@@ -104,7 +127,7 @@ int uartshCommand_mw(int argc, char* argv[])
 	int width = 8;
 	char* address = NULL;
 	unsigned long long data = 0;
-	int bytes = 1;
+	int count = 1;
 
 	UartshCommandOption const options[] =
 	{
@@ -139,9 +162,10 @@ int uartshCommand_mw(int argc, char* argv[])
 			data = (unsigned long long) strtoull(argv[1], NULL, 0);
 
 		if( argc > 2 )
-			bytes = (int) strtoul(argv[2], NULL, 0);
+			count = (int) strtoul(argv[2], NULL, 0);
 
 		width >>= 3;
+		unsigned long bytes = (count * width);
 
 		for( int i = 0; i < bytes; i += width )
 		{
@@ -172,7 +196,7 @@ int uartshCommand_mw(int argc, char* argv[])
 				data++;
 		}
 
-		printf("\n%d bytes written\n", bytes);
+		printf("\n%ld bytes written\n", bytes);
 	}
 
 	return 0;

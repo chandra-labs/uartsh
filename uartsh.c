@@ -151,12 +151,12 @@ unsigned int uartsh_gets(char** input)
 						}
 					} break;
 
-			#if (UARTSH_CONFIG_KEY_BACKSPACE != UARTSH_DELETE_KEY)
+				#if (UARTSH_CONFIG_KEY_BACKSPACE != UARTSH_DELETE_KEY)
 					case KEY_DEL:
 					{
 						handleDeleteKey( pEditBuffer, &cursor );
 					} break;
-			#endif
+				#endif
 
 					default:
 					{
