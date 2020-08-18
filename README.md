@@ -210,4 +210,3 @@ Improvements and suggestions are always welcome, lets learn together
 	
 And please check [https://github.com/cofyc/argparse] for details on all supported command options
 
-**Author: Chandra Mohan C [willvalab@gmail.com]**
